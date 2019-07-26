@@ -110,7 +110,7 @@ def analyze(lock,options,pre_detection,save_time,bee_time,pre,cnt,pre_num_name,s
         pre_detection.clear()
     	
     fh_id_log.close()
-    cv2.imwrite(save_prefix +" top_text" + str(cnt) + ".jpg",rgb)
+    cv2.imwrite(save_prefix +" top"+ str(cnt) + ".jpg",rgb)
 
     os.system('sync')
     
