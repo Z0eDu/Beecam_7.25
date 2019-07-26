@@ -70,6 +70,7 @@ GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)    #beam sensor 1
 GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)   #beam sensor 2
 
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)  #Led
+GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  #Led
 
 
 
@@ -82,6 +83,7 @@ t.sleep(2)
 print camera.shutter_speed
 rawCapture = PiRGBArray(camera, size=(640,480))
 
+GPIO.cleanup(24)
 
 start_time=t.time()
 bee_log_dict['start_time']=start_time
@@ -168,11 +170,14 @@ while(not quit_program):
             time_of_clock=t.time()
         
         elif t.time()-time_of_clock>170:
-               
+            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)  #off
             t.sleep(1)
             time_of_clock=t.time()
             GPIO.cleanup(24)
             t.sleep(1)
+            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)  #on
+            t.sleep(1)
+            GPIO.cleanup(24)
 
         if (t.time()-trigger_t<interval):
             
