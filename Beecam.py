@@ -170,12 +170,12 @@ while(not quit_program):
             time_of_clock=t.time()
         
         elif t.time()-time_of_clock>170:
-            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)  #off
+            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  #off
             t.sleep(1)
             time_of_clock=t.time()
             GPIO.cleanup(24)
             t.sleep(1)
-            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)  #on
+            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  #on
             t.sleep(1)
             GPIO.cleanup(24)
 
