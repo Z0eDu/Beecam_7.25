@@ -1,36 +1,21 @@
 import RPi.GPIO as GPIO
 import time as t
 import os
-import subprocess
 import sys
 import datetime
 import cv2
 import numpy as np
-import json
 from picamera import PiCamera
-import file_analyze as ana
-import threading
-import serial
 import numpy as np
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-from argparse import ArgumentParser
-import apriltag
+
+import threading
+
 '''Needed to use the PI screen with the gui display'''
 #piTFT environment variables
 
-parser = ArgumentParser(
-        description='test apriltag Python bindings')
-    
-apriltag.add_arguments(parser)
-options = parser.parse_args()
-
-
-'''Dictionary for bee enter/exit events'''
-bee_log_dict={-1: {'entries':[], 'exits': []} }
-bee_time={}
-
-        
+          
 def get_run_count(runFile='runCount.dat'):
     '''
     Get the current run count, increment, and return
@@ -44,7 +29,9 @@ def get_run_count(runFile='runCount.dat'):
     fh.close()
     return cnt
 
+
 DATE_FMT_STR='%Y-%m-%d_%H-%M-%S'
+DATE_FMT_STR_IMG='%m-%d_%H-%M-%S_%f'
 
 def format_folder(dt):
     '''
@@ -64,33 +51,32 @@ def format_folder(dt):
     return pref + '/'
 
 
+def save_img(lock,name_str,img):
+    lock[0]='locked'
+    print('writing image' + name_str)
+    cv2.imwrite(name_str,img)
+    lock[0]='unlocked'
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(27, GPIO.IN)   #bailout button
 GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)    #beam sensor 1
 GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)   #beam sensor 2
-
-GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)  #Led
-GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  #Led
-
+GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)   #Used for scale 
 
 
 # initialize the camera and grab a reference to the raw camera capture
-camera = PiCamera(resolution=(640,480), framerate=32)
+camera = PiCamera(resolution=(640,480), framerate=5)
 camera.iso = 800
 camera.exposure_mode='night'
 camera.shutter_speed=2000
 t.sleep(2)
 print camera.shutter_speed
 rawCapture = PiRGBArray(camera, size=(640,480))
-
-GPIO.cleanup(24)
+GPIO.cleanup(21)
 
 start_time=t.time()
-bee_log_dict['start_time']=start_time
-bee_log_dict['start_time_iso']=datetime.datetime.today().isoformat()
 
 save_prefix=format_folder(datetime.datetime.today())
-
 
 sensor1 = False     #exiting sensor
 sensor2 = False     #entering sensor
@@ -98,7 +84,6 @@ current_time = 0.0
 hasPollen = False
 cnt = 0
 num_name = ""
-
 
 pre_detection={}
 
@@ -108,25 +93,14 @@ paused = False
 global quit_program
 quit_program = False
 
-
-pics_taken = {}
-fh_time_log=open(save_prefix+ 'ImgTimes.log','a')
-
-
-
-
 def GPIO27_callback(channel):
     if not GPIO.input(27):
         global quit_program
         quit_program = True
-        for i in pics_taken.keys():
-            pics_taken[i].join()
+        camera.close()                   
         GPIO.cleanup()
-	fh_time_log.close()
 
         
-
-
 GPIO.add_event_detect(27, GPIO.BOTH, callback=GPIO27_callback, bouncetime=300)
 
 sensor1,sensor2=False,False
@@ -138,21 +112,22 @@ interval=5
 pre=['']
 
 lock = ['unlocked']
-thread_cnt=0
+thread_cnt=-1
 
 time_of_clock=t.time()
 
+threads=[]
+
+
+
 while(not quit_program):
+
+    '''
+    Only have one image written at a time.
+    '''
+    if lock[0]=='unlocked' and not len(threads)==0:  
+        threads.pop(0).start()
     
-    
-    if lock[0]=='unlocked' and not pics_taken=={}:  
-        if thread_cnt<cnt:
-            thread_cnt+=1
-            print 'thread: ',str(thread_cnt)
-            pics_taken[thread_cnt].start()
-            
-        #except:
-            #print 'exceed'
     if (not paused): 
         pre_sensor1,pre_sensor2=sensor1,sensor2
         sensor1,sensor2=not GPIO.input(5),not GPIO.input(26)
@@ -167,46 +142,44 @@ while(not quit_program):
             leave=True
             enter=False
             trigger_t=t.time()
-            time_of_clock=t.time()
+            time_of_clock=t.time() #scale
         
         elif t.time()-time_of_clock>170:
-            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  #off
+            GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)   
             t.sleep(1)
-            time_of_clock=t.time()
-            GPIO.cleanup(24)
+            GPIO.cleanup(21)
+            GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)   
             t.sleep(1)
-            GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  #on
-            t.sleep(1)
-            GPIO.cleanup(24)
+            GPIO.cleanup(21)
 
         if (t.time()-trigger_t<interval):
-            
-            
             pre_num_name=num_name
             cnt = cnt + 1
             print ('cnt: '+str(cnt))
 
             time_pre_image=t.time()
 
+            dt=datetime.datetime.today()
+            
             camera.capture(rawCapture, format="bgr", use_video_port=True)
             image = rawCapture.array
+            #cv2.imwrite(save_prefix+"top" + str(cnt) + ".jpg", image)
+            #image=np.ones((2,2))
+            
+            
+            #imb=image.copy()
+            #cv2.imwrite(save_prefix+dt.strftime(DATE_FMT_STR_IMG) + "_" + str(cnt) + ".jpg", image)
+            im_name=save_prefix+dt.strftime(DATE_FMT_STR_IMG) + "_side_" + str(cnt) + ".jpg"
+            #save_img(im_name,image.copy())
 
-	    '''add threshold detection for bees here'''
+            threads.append(threading.Thread(target=save_img,args=(lock,im_name,image.copy())))
 
-            cv2.imwrite(save_prefix+"top" + str(cnt) + ".jpg", image)
+            print(str(cnt))
             
             rawCapture.truncate(0)
             
             print("Elapsed Time for capture: ", str(t.time()-time_pre_image))
-            
-            save_time=datetime.datetime.today().isoformat()[:-7]
-	    fh_time_log.write(str(cnt) +'\t'+ save_time + '\n')
-	    bee_time[cnt]=save_time
-		
-            thread=threading.Thread(target=ana.analyze,args=(lock,options,pre_detection,save_time,bee_time,pre,cnt,pre_num_name,save_prefix,bee_log_dict,start_time))
-        
-            pics_taken[cnt]=thread
-            
+
             
 
             
