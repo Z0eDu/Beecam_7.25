@@ -35,7 +35,7 @@ The images which meet the threshold will be sent to the queue. If the memeory is
 makes the saving and capturing speed raletivly the same so memory will not be overflow. 
 (still need to test with edge cases in real experiement but I got this result when I tried it) 
 
-The image saving threads will get the image from queue asynchronosly. TOP camera will check if there's tag, and save both images and tag. 
+The image saving threads will get the image from queue asynchronosly. TOP camera will check if there's tag, and save both images and tag. Currently only check green tags
 Side camera will directly save images.
 
 The top camera has controllable saving threads where you can terminate any by setting the variable slef.terminated=True. The intention here is that you might want 
