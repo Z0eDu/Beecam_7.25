@@ -9,7 +9,7 @@ turn on the side raspi.
 (might siwtch up two set of ETH IP address. need to double check if any changes needed)
 
 
-#LED colors: 
+LED colors: 
 BLUE means the same thing but green means a little bit different. you can configure it to represent different information
 
 Blue: programs successfully start.
