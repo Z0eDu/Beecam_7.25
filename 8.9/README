@@ -1,5 +1,7 @@
 camera.py -side camera -ntp server IP address for ethernet is 192.168.0.10 for NTP and 192.168.1.10 for UDP 
 no_detection.py -top camera -ntp receiver. IP address for ethernet is 192.168.0.20 for NTP and 192.168.1.20 for UDP 
+start.sh.  -bash script used to make sure NTP works. just in case you disconnect ethernet, top camera will run this before the program starts. 
+
 
 DHCP is used to configure static IP for ehternet. NTP is used to sync time. The side camera is NTP server and can sync with internet. 
 The top will only sync to the side rtc clock. If you want to connect to internet with top camera, you need to set right time. You can either do it mannually or
