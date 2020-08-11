@@ -16,7 +16,7 @@ LED colors:
 BLUE means the same thing but green means a little bit different. you can configure it to represent different information
 
 Blue: programs successfully start.
-Green: the saving process is done, there are no more images in the queue stored in memory (TOP) 
+Green: the saving process is done for now, there are no more images in the queue stored in memory (TOP) 
        The program is about to finish, only saving threads are working.(SIDE)
 
 Both cameras use thresholding to determine if a image should be sent to queue which connectetd to the saving threads. UDP is disabled because there will be 0.8s 
