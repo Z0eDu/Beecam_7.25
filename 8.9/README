@@ -39,8 +39,14 @@ The image saving threads will get the image from queue asynchronosly. TOP camera
 Side camera will directly save images.
 
 The top camera has controllable saving threads where you can terminate any by setting the variable slef.terminated=True. The intention here is that you might want 
-to add more saving threads when there are no bees. But I don't use UDP so TOP camera has to idling and checking each image. The side camera used gloabl variable q_done 
+to add more saving threads when there are no bees. But I don't use UDP so TOP camera has to idle and check each image. The side camera used gloabl variable q_done 
 to determine if all saving threads need to be terminated. 
+
+The switches are bail out buttons. You alwasy need to use switch to exit. Both switches need to stay at the bottom and go up for exit. need to stay at the bottom.
+push buttons don't work due to my soldering problem. 
+
+If there are over 300 images in the queue when you clicked the bail out buttons, I set two more saving threads to speed up the saving process. you can increase 
+this as you want.
 
 NOTE when the programs start both camera has some time to adjus the light so you will see around 100 picutures without bees will be saved. Wait for 5s here.
 
