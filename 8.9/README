@@ -1,0 +1,46 @@
+camera.py -side camera -ntp server IP address for ethernet is 192.168.0.10 for NTP and 192.168.1.10 for UDP 
+no_detection.py -top camera -ntp receiver. IP address for ethernet is 192.168.0.20 for NTP and 192.168.1.20 for UDP 
+
+DHCP is used to configure static IP for ehternet. NTP is used to sync time. The side camera is NTP server and can sync with internet. 
+The top will only sync to the side rtc clock. If you want to connect to internet with top camera, you need to set right time. You can either do it mannually or
+turn on the side raspi. 
+
+
+(might siwtch up two set of ETH IP address. need to double check if any changes needed)
+
+
+# LED colors: 
+BLUE means the same thing but green means a little bit different. you can configure it to represent different information
+
+Blue: programs successfully start.
+Green: the saving process is done, there are no more images in the queue stored in memory (TOP) 
+       The program is about to finish, only saving threads are working.(SIDE)
+
+Both cameras use thresholding to determine if a image should be sent to queue which connectetd to the saving threads. UDP is disabled because there will be 0.8s 
+delay if UDP is used in a seperate thread. If UDP is used in main for look, client needs to wait for the answers from the server so if server sent a 1 to the 
+client, signal it to start, and there's 0.6-1s delay between sending and receiving. (might still need to experiment if the delay is acceptable for the bees, if
+acceptable, it would be great. Top camera won't idle if there are no bees and it can speed up saving threads at the same time. 
+
+The basic flow for both cameras are:
+
+There are two types of threads: 1. image capturing threads 2. image saving threads
+
+The camera is taking at high frame rate. 60 fps for side camera and 45 fps for top camera. I chose 45 for the top because the frame rate over 45fps will
+have less field of view. But if less FoV doesn't matter, you can set 45 to 60 fps for the top camera. Remeber to change the threshold as well. 
+
+The images which meet the threshold will be sent to the queue. If the memeory is used over 80%, all the image capturing threads will be delayed 0.8s which
+makes the saving and capturing speed raletivly the same so memory will not be overflow. 
+(still need to test with edge cases in real experiement but I got this result when I tried it) 
+
+The image saving threads will get the image from queue asynchronosly. TOP camera will check if there's tag, and save both images and tag. 
+Side camera will directly save images.
+
+The top camera has controllable saving threads where you can terminate any by setting the variable slef.terminated=True. The intention here is that you might want 
+to add more saving threads when there are no bees. But I don't use UDP so TOP camera has to idling and checking each image. The side camera used gloabl variable q_done 
+to determine if all saving threads need to be terminated. 
+
+NOTE when the programs start both camera has some time to adjus the light so you will see around 100 picutures without bees will be saved. Wait for 5s here.
+
+PLease adjust the threshold just in case the environments change.
+
+
